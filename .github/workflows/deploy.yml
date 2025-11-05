@@ -1,9 +1,11 @@
 name: Deploy to GitHub Pages
 
+# وقتی روی main push می‌شه
 on:
   push:
     branches: [ main ]
 
+# دسترسی به GITHUB_TOKEN
 permissions:
   contents: read
   pages: write
@@ -14,34 +16,37 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. کد رو دانلود کن
       - name: Checkout
         uses: actions/checkout@v4
 
+      # 2. pnpm رو نصب کن (قبل از Node!)
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: latest  # یا 10 برای نسخه خاص
+
+      # 3. Node.js رو راه‌اندازی کن (با cache pnpm)
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'pnpm'  # کش کردن pnpm store برای سرعت
+          cache: 'pnpm'
 
-      - name: Install pnpm
-        run: |
-          corepack enable
-          corepack prepare pnpm@latest --activate
-          pnpm --version  # چک کردن نسخه
-
+      # 4. وابستگی‌ها رو نصب کن
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Lint  # اضافه: بررسی کد
-        run: pnpm lint
-
+      # 5. پروژه رو بیلد کن
       - name: Build
         run: pnpm run build
 
+      # 6. محتویات dist رو آپلود کن
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./dist
 
+      # 7. دیپلوی به GitHub Pages
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
