@@ -5,43 +5,53 @@ on:
   push:
     branches: [ main ]
 
-# دسترسی به GITHUB_TOKEN
+# دسترسی‌های لازم
 permissions:
   contents: read
   pages: write
   id-token: write
 
+# تعریف Environment برای Pages
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
 jobs:
   build-and-deploy:
+    # محیط دیپلوی: github-pages (اجباری!)
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
     runs-on: ubuntu-latest
 
     steps:
-      # 1. کد رو دانلود کن
+      # 1. کد رو بگیر
       - name: Checkout
         uses: actions/checkout@v4
 
-      # 2. pnpm رو نصب کن (قبل از Node!)
+      # 2. نصب pnpm
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: latest  # یا 10 برای نسخه خاص
+          version: latest
 
-      # 3. Node.js رو راه‌اندازی کن (با cache pnpm)
+      # 3. راه‌اندازی Node با کش pnpm
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'pnpm'
 
-      # 4. وابستگی‌ها رو نصب کن
+      # 4. نصب وابستگی‌ها
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # 5. پروژه رو بیلد کن
+      # 5. بیلد پروژه
       - name: Build
         run: pnpm run build
 
-      # 6. محتویات dist رو آپلود کن
+      # 6. آپلود فایل‌های بیلد شده
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
@@ -49,4 +59,5 @@ jobs:
 
       # 7. دیپلوی به GitHub Pages
       - name: Deploy to GitHub Pages
+        id: deployment
         uses: actions/deploy-pages@v4
