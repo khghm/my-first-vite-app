@@ -4,4 +4,16 @@ import vue from '@vitejs/plugin-vue'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [vue()],
+ server: {
+    port: 5173,
+    host: '0.0.0.0', // 👈 (از مرحله قبل) مهم برای اتصال Ngrok
+    
+    // 👈 تنظیمات جدید برای رفع خطای "Blocked request"
+    allowedHosts: [
+      'localhost',
+      '127.0.0.1',
+      // دامنه موقتی که Ngrok به شما داده است
+      'idella-nonsubordinate-edith.ngrok-free.dev', 
+    ],
+  },
 })

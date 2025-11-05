@@ -1,0 +1,77 @@
+name: Deploy to GitHub Pages
+
+# Triggers: push به main یا pull request
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+# Permissions برای Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Jobs
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'  # فقط روی main اجرا شه (نه PR)
+
+    steps:
+      # 1. Checkout کد (آپدیت به نسخه دقیق و retry)
+      - name: Checkout
+        uses: actions/checkout@v4.1.7  # نسخه ثابت و معتبر (تا نوامبر ۲۰۲۵)
+        with:
+          fetch-depth: 0  # تمام history رو بگیر برای logging بهتر
+
+      # 2. Setup Node.js با cache
+      - name: Setup Node
+        uses: actions/setup-node@v4.0.3
+        with:
+          node-version: 20
+          cache: 'pnpm'
+          cache-dependency-path: '**/pnpm-lock.yaml'
+
+      # 3. فعال‌سازی pnpm
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4.0.0  # استفاده از action اختصاصی pnpm برای پایداری
+        with:
+          version: latest
+
+      # 4. نصب dependencies (با frozen-lockfile برای reproducibility)
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # 5. Lint و Test (اضافه‌شده برای کیفیت)
+      - name: Lint code
+        run: pnpm run lint  # اگر ESLint داری؛ اگر نه، skip کن
+
+      - name: Run tests
+        run: pnpm run test:unit  # اگر Vitest داری؛ فعلاً skip اگر تنظیم نشده
+
+      # 6. Build پروژه
+      - name: Build
+        run: pnpm run build
+        env:
+          VITE_BASE: /my-first-vite-app/  # برای base path در GitHub Pages
+
+      # 7. آپلود artifact
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3.0.1
+        with:
+          path: ./dist
+
+  # Job جدا برای Deploy (فقط روی main)
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build-and-deploy  # وابسته به build موفق
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4.0.2
