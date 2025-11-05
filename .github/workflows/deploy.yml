@@ -47,8 +47,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # تست جدید: اجرای تست‌ها
+      - name: Run Tests
+        run: pnpm test
+
       # 5. بیلد پروژه
       - name: Build
+        if: success()
         run: pnpm run build
 
       # 6. آپلود فایل‌های بیلد شده
